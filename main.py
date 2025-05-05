@@ -20,6 +20,7 @@ class DetalhesEntrega(BaseModel):
     dados: dict
     funcao_objetivo: str
     restricoes: list[str]
+    restricoes_detalhadas: list[dict]
     passo_a_passo: list[str]
     metodo: str
     resultado: dict
@@ -45,15 +46,21 @@ def solve_lp(
     z = pulp.value(prob.objective)
     return sol, z
 
+def monta_restricoes_detalhadas(restricoes):
+    return [
+        {"coef": coef, "sentido": sentido, "rhs": rhs}
+        for coef, sentido, rhs in restricoes
+    ]
+
 @app.get("/api/questao1", response_model=DetalhesEntrega)
 def questao1():
     questao = "Operação de granel em São Chico: milho (x1) e soja (x2)."
     variaveis = {"x1":"toneladas de milho","x2":"toneladas de soja"}
     cof_obj = {"x1":200,"x2":300}
     restricoes = [
-      ({"x1":0.4,"x2":0.5},"<=",120),  # esteira
-      ({"x1":0.2,"x2":0.3},"<=",80),   # grua
-      ({"x1":1,  "x2":1  },"<=",150),  # pátio
+      ({"x1":0.4,"x2":0.5},"<=",120),
+      ({"x1":0.2,"x2":0.3},"<=",80),
+      ({"x1":1,  "x2":1  },"<=",150),
     ]
     passo = [
       "Definir x1,x2 ≥ 0",
@@ -78,6 +85,7 @@ def questao1():
         "0.2 x1 + 0.3 x2 ≤ 80",
         "1 x1 + 1 x2 ≤ 150",
       ],
+      "restricoes_detalhadas": monta_restricoes_detalhadas(restricoes),
       "passo_a_passo": passo,
       "metodo": "Simplex via CBC (PuLP)",
       "resultado": {"x": sol, "Z": z},
@@ -120,6 +128,7 @@ def questao2():
         "0.5 x1 + 1 x2 + 0.5 x3 + 0.5 x4 ≤ 50",
         "1 x1 + 2 x2 + 1.5 x3 + 2 x4 ≤ 60",
       ],
+      "restricoes_detalhadas": monta_restricoes_detalhadas(restricoes),
       "passo_a_passo": passo,
       "metodo": "Simplex via CBC (PuLP)",
       "resultado": {"x": sol, "Z": z},
@@ -190,6 +199,7 @@ def questao3():
         "∑ distânciaᵢ·xᵢ ≤ 4500",
         *[f"∑ x ∈ {r} ≥ {min_reg[r]}" for r in regioes]
       ],
+      "restricoes_detalhadas": monta_restricoes_detalhadas(restricoes),
       "passo_a_passo": passo,
       "metodo": "Simplex via CBC (PuLP)",
       "resultado": {"x": sol, "Z": z},
