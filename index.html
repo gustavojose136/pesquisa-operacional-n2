@@ -1,250 +1,504 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>PL Logística – Q1, Q2 & Q3</title>
+  <meta charset="utf-8">
+  <title>LP Dinâmico</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   >
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  >
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #f8f9fa; }
+    .card { margin-bottom: 1.5rem; border-radius: .75rem; }
+    .card-header { border-radius: .75rem .75rem 0 0; }
+    .chart-container { position: relative; height: 300px; }
+    .list-group-numbered { counter-reset: step; }
+    .list-group-numbered .list-group-item::before {
+      counter-increment: step;
+      content: counter(step);
+      background: #ffc107;
+      color: #212529;
+      border-radius: 1rem;
+      display: inline-block;
+      width: 1.5rem;
+      height: 1.5rem;
+      text-align: center;
+      line-height: 1.5rem;
+      margin-right: .75rem;
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body>
+  <div class="container py-4">
+    <h1 class="mb-4">
+      <i class="fas fa-truck-moving me-2"></i>
+      LP Dinâmico – 3 Problemas
+    </h1>
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">PL Logística</a>
-      <div class="collapse navbar-collapse">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <a class="nav-link active" href="#" data-endpoint="http://127.0.0.1:8000/api/questao1">Questão 1</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#" data-endpoint="http://127.0.0.1:8000/api/questao2">Questão 2</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#" data-endpoint="http://127.0.0.1:8000/api/questao3">Questão 3</a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <main class="container">
-
-    <div class="row mb-3">
-      <div class="col">
-        <h1 id="titulo" class="h3 text-secondary"></h1>
-        <p id="descricao"></p>
-      </div>
+    <div class="mb-4">
+      <label class="form-label">
+        <i class="fas fa-list me-1"></i> Selecionar Problema
+      </label>
+      <select id="presetSelect" class="form-select" onchange="loadPreset(this.value)">
+        <option value="granel">01 – Granel (São Chico)</option>
+        <option value="multimodal">02 – Multimodal (Joinville)</option>
+        <option value="bebidas">03 – Bebidas Maruim</option>
+      </select>
     </div>
 
-    <div class="row mb-4">
-      <div class="col">
+    <div class="row">
+      <div class="col-lg-6">
         <div class="card shadow-sm">
-          <div class="card-header bg-white"><strong>História</strong></div>
-          <div class="card-body">
-            <p id="historia-text" class="mb-0"></p>
+          <div class="card-header bg-success text-white d-flex align-items-center">
+            <i class="fas fa-cogs fa-lg me-2"></i>
+            <h2 class="h5 mb-0">Modelo</h2>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row gy-4 mb-4">
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-header bg-white"><strong>Variáveis</strong></div>
-          <ul class="list-group list-group-flush" id="lista-vars"></ul>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-header bg-white"><strong>Coeficientes</strong></div>
-          <ul class="list-group list-group-flush" id="lista-coef"></ul>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-header bg-white"><strong>Formulação</strong></div>
           <div class="card-body">
-            <p><code id="fo"></code></p>
-            <ul id="lista-restricoes" class="ps-3"></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-4">
-      <div class="col">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white"><strong>Passo a Passo</strong></div>
-          <ol class="list-group list-group-numbered list-group-flush" id="lista-passo"></ol>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-5">
-      <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white"><strong>Resultado Ótimo / Exploração</strong></div>
-          <div class="card-body">
-            <div id="resultado-detalhado"></div>
-            <pre id="json-resultado" class="small"></pre>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white"><strong>Gráfico de x*</strong></div>
-          <div class="p-3">
-            <canvas id="chart-x"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-5">
-      <div class="col">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white"><strong>Exploração Manual</strong></div>
-          <div class="card-body">
-            <form id="form-x" class="row gy-2"></form>
-            <button id="btn-atualiza" class="btn btn-outline-primary mt-2">
-              Atualizar Valores
+            <h6><i class="fas fa-list-ul me-1"></i> Variáveis & Coef. da FO</h6>
+            <table class="table table-sm" id="var-table">
+              <thead>
+                <tr><th>Código</th><th>Nome</th><th>Coef. FO</th><th>Ações</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-outline-primary btn-sm mb-3" onclick="addVar()">
+              <i class="fas fa-plus me-1"></i>Adicionar variável
             </button>
+
+            <!-- Consumo de Recursos (só Granel) -->
+            <div id="consumption-card" class="card mt-3 shadow-sm" style="display:none;">
+              <div class="card-header bg-secondary text-white d-flex align-items-center">
+                <i class="fas fa-sliders-h fa-lg me-2"></i>
+                <h6 class="mb-0">Consumo de Recursos por Tonelada</h6>
+              </div>
+              <div class="card-body p-2">
+                <table class="table table-borderless table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Recurso</th>
+                      <th>Milho (x₁)</th>
+                      <th>Soja (x₂)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Esteira (h/t)</td><td>0,4</td><td>0,5</td></tr>
+                    <tr><td>Guindaste (h/t)</td><td>0,2</td><td>0,3</td></tr>
+                    <tr><td>Pátio (t/t)</td><td>1</td><td>1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tabela de Bairros e C.L. (só Bebidas) -->
+            <div id="coef-card" class="card mt-3 shadow-sm" style="display:none;">
+              <div class="card-header bg-secondary text-white d-flex align-items-center">
+                <i class="fas fa-table fa-lg me-2"></i>
+                <h6 class="mb-0">Bairros e Coeficiente de Lucro (C.L.)</h6>
+              </div>
+              <div class="card-body p-0">
+                <table class="table table-bordered table-sm mb-0 text-center">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Região</th>
+                      <th>1</th><th>2</th><th>3</th><th>4</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th>Centro</th>
+                      <td>Atiradores<br><small>2 km / 480</small></td>
+                      <td>América<br><small>2 km / 475</small></td>
+                      <td>Bucarein<br><small>2 km / 450</small></td>
+                      <td>Anita Garibaldi<br><small>3 km / 445</small></td>
+                    </tr>
+                    <tr>
+                      <th>Norte</th>
+                      <td>Costa e Silva<br><small>5 km / 400</small></td>
+                      <td>Santo Antônio<br><small>4 km / 420</small></td>
+                      <td>Bom Retiro<br><small>5 km / 395</small></td>
+                      <td>Zona Ind. Norte<br><small>12 km / 260</small></td>
+                    </tr>
+                    <tr>
+                      <th>Leste</th>
+                      <td>Iririú<br><small>6 km / 380</small></td>
+                      <td>Comasa<br><small>7 km / 360</small></td>
+                      <td>Aventureiro<br><small>6 km / 375</small></td>
+                      <td>Itaum<br><small>6 km / 355</small></td>
+                    </tr>
+                    <tr>
+                      <th>Sul</th>
+                      <td>Adhemar Garcia<br><small>6 km / 380</small></td>
+                      <td>Boehmerwald<br><small>8 km / 340</small></td>
+                      <td>Paranaguamirim<br><small>10 km / 295</small></td>
+                      <td>Nova Brasília<br><small>9 km / 320</small></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <h6 class="mt-4"><i class="fas fa-lock me-1"></i> Restrições</h6>
+            <table class="table table-sm" id="cons-table">
+              <thead><tr></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-outline-primary btn-sm" onclick="addConstraint()">
+              <i class="fas fa-plus me-1"></i>Adicionar restrição
+            </button>
+
+            <!-- Restrições Operacionais (só Bebidas) -->
+            <div id="constraints-op" class="card mt-3 shadow-sm" style="display:none;">
+              <div class="card-header bg-secondary text-white d-flex align-items-center">
+                <i class="fas fa-tools fa-lg me-2"></i>
+                <h6 class="mb-0">Restrições Operacionais</h6>
+              </div>
+              <div class="card-body">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-boxes me-2 text-secondary"></i>
+                    <strong>Total de pallets/semana:</strong>
+                    <span class="ms-auto">∑ xᵢ ≤ 800</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-route me-2 text-secondary"></i>
+                    <strong>Quilômetro-pallet total:</strong>
+                    <span class="ms-auto">∑ (distᵢ·xᵢ) ≤ 4500</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Restrições Regionais (só Bebidas) -->
+            <div id="constraints-reg" class="card mt-3 shadow-sm" style="display:none;">
+              <div class="card-header bg-secondary text-white d-flex align-items-center">
+                <i class="fas fa-map-marker-alt fa-lg me-2"></i>
+                <h6 class="mb-0">Cobertura Mínima por Região</h6>
+              </div>
+              <div class="card-body">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-city me-2 text-secondary"></i>
+                    Central (x₁…x₄):
+                    <span class="ms-auto">≥ 200 pallets</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-tree me-2 text-secondary"></i>
+                    Norte (x₅…x₈):
+                    <span class="ms-auto">≥ 200 pallets</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-water me-2 text-secondary"></i>
+                    Leste (x₉…x₁₂):
+                    <span class="ms-auto">≥ 130 pallets</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-center">
+                    <i class="fas fa-globe-americas me-2 text-secondary"></i>
+                    Sul (x₁₃…x₁₆):
+                    <span class="ms-auto">≥ 120 pallets</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white d-flex align-items-center">
+            <i class="fas fa-chart-line fa-lg me-2"></i>
+            <h2 class="h5 mb-0">Solução Ótima</h2>
+          </div>
+          <div class="card-body">
+            <ul id="result-list"></ul>
+            <p><strong>Z*</strong>: R$ <span id="val-Z">–</span></p>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-warning text-dark d-flex align-items-center">
+            <i class="fas fa-list-ol fa-lg me-2"></i>
+            <h2 class="h5 mb-0">Passo a Passo</h2>
+          </div>
+          <div class="card-body">
+            <ol id="step-list" class="list-group list-group-numbered mb-0"></ol>
+          </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-light text-dark d-flex align-items-center">
+            <i class="fas fa-chart-bar fa-lg me-2"></i>
+            <h2 class="h5 mb-0">Gráfico de Alocação</h2>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="barChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
-  </script>
   <script>
-    const links = document.querySelectorAll('.nav-link');
-    let chart, coefObj, restricoesDet;
-
-    links.forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        links.forEach(x => x.classList.remove('active'));
-        a.classList.add('active');
-        fetchAndRender(a.dataset.endpoint);
-      });
-    });
-
-    async function fetchAndRender(url) {
-      const res = await fetch(url);
-      const d   = await res.json();
-
-      document.getElementById('titulo').textContent       = d.questao;
-      document.getElementById('descricao').textContent   = d.funcao_objetivo;
-      document.getElementById('historia-text').textContent = d.historia || "";
-
-      const ulv = document.getElementById('lista-vars');
-      ulv.innerHTML = "";
-      for (let [k,v] of Object.entries(d.variaveis_decisao)) {
-        ulv.innerHTML += `<li class="list-group-item">${k} → ${v}</li>`;
-      }
-
-      const ulc = document.getElementById('lista-coef');
-      ulc.innerHTML = "";
-      for (let [k,c] of Object.entries(d.dados.coef_obj)) {
-        ulc.innerHTML += `<li class="list-group-item">c<sub>${k}</sub> = ${c}</li>`;
-      }
-
-      document.getElementById('fo').textContent = d.funcao_objetivo;
-      const ulr = document.getElementById('lista-restricoes');
-      ulr.innerHTML = "";
-      d.restricoes.forEach(r => {
-        ulr.innerHTML += `<li>${r}</li>`;
-      });
-
-      const ulp = document.getElementById('lista-passo');
-      ulp.innerHTML = "";
-      d.passo_a_passo.forEach(p => {
-        ulp.innerHTML += `<li class="list-group-item">${p}</li>`;
-      });
-
-      renderResultado(d.resultado.x, d.resultado.Z, []);
-
-      document.getElementById('json-resultado').textContent =
-        JSON.stringify(d.resultado, null, 2);
-        
-      const ctx = document.getElementById('chart-x');
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(d.variaveis_decisao),
-          datasets: [{ label: 'x*', data: Object.values(d.resultado.x) }]
+    // presets
+    const presets = {
+      granel: {
+        varList: ['x1','x2'],
+        varNames: { x1:'Milho', x2:'Soja' },
+        varFO:    { x1:200, x2:300 },
+        varConstraints:[
+          { coef:{x1:0.4,x2:0.5}, sense:'<=', rhs:120 },
+          { coef:{x1:0.2,x2:0.3}, sense:'<=', rhs:80  },
+          { coef:{x1:1,  x2:1  }, sense:'<=', rhs:150 }
+        ]
+      },
+      multimodal: {
+        varList:['x1','x2','x3','x4'],
+        varNames:{
+          x1:'Eletrônicos', x2:'Móveis',
+          x3:'Perecíveis',  x4:'Construção'
         },
-        options: { responsive: true }
-      });
-
-      coefObj       = d.dados.coef_obj;
-      restricoesDet = d.restricoes_detalhadas;
-
-      const formX = document.getElementById('form-x');
-      formX.innerHTML = '';
-      Object.keys(d.variaveis_decisao).forEach(v => {
-        formX.innerHTML += `
-          <div class="col-md-3">
-            <label for="in-${v}" class="form-label">${v}</label>
-            <input type="number" id="in-${v}" class="form-control"
-                   value="${d.resultado.x[v]}" min="0" step="1">
-          </div>`;
-      });
-
-      document.getElementById('btn-atualiza').onclick = recalcula;
-    }
-
-    function renderResultado(xs, Z, status) {
-      const det = ['<div class="alert alert-info">'];
-      det.push('<h5>Exploração Manual / Ótimo:</h5><ul>');
-      Object.entries(xs).forEach(([v,x]) => {
-        det.push(`<li>${v} = ${x}</li>`);
-      });
-      det.push('</ul>');
-      det.push(`<strong>Z = ${Z.toFixed(2)}</strong>`);
-      if (status.length) {
-        det.push('<hr><ul>');
-        status.forEach(s =>
-          det.push(`<li class="${s.ok? 'text-success':'text-danger'}">
-                      ${s.texto}
-                    </li>`));
-        det.push('</ul>');
+        varFO:{ x1:500,x2:800,x3:600,x4:700 },
+        varConstraints:[
+          {coef:{x1:2,x2:3,x3:1,x4:4},sense:'<=',rhs:100},
+          {coef:{x1:0.5,x2:1,x3:0.5,x4:0.5},sense:'<=',rhs:50},
+          {coef:{x1:1,x2:2,x3:1.5,x4:2},sense:'<=',rhs:60}
+        ]
+      },
+      bebidas: {
+        varList:Array.from({length:16},(_,i)=>`x${i+1}`),
+        varNames:{
+          x1:'Atiradores',   x2:'América',
+          x3:'Bucarein',     x4:'Anita Garibaldi',
+          x5:'Costa e Silva',x6:'Santo Antônio',
+          x7:'Bom Retiro',   x8:'Zona Ind. Norte',
+          x9:'Iririú',      x10:'Comasa',
+          x11:'Aventureiro',x12:'Itaum',
+          x13:'Adhemar Garcia',x14:'Boehmerwald',
+          x15:'Paranaguamirim',x16:'Nova Brasília'
+        },
+        varFO:{
+          x1:480,x2:475,x3:450,x4:445,
+          x5:400,x6:420,x7:395,x8:260,
+          x9:380,x10:360,x11:375,x12:355,
+          x13:380,x14:340,x15:295,x16:320
+        },
+        varConstraints:[
+          { coef:Object.fromEntries(Array.from({length:16},(_,i)=>[`x${i+1}`,1])), sense:'<=', rhs:800 },
+          { coef:{
+              x1:2,x2:2,x3:2,x4:3,
+              x5:5,x6:4,x7:5,x8:12,
+              x9:6,x10:7,x11:6,x12:6,
+              x13:6,x14:8,x15:10,x16:9
+            }, sense:'<=', rhs:4500 },
+          { coef:{x1:1,x2:1,x3:1,x4:1}, sense:'>=', rhs:200 },
+          { coef:{x5:1,x6:1,x7:1,x8:1}, sense:'>=', rhs:200 },
+          { coef:{x9:1,x10:1,x11:1,x12:1}, sense:'>=', rhs:130 },
+          { coef:{x13:1,x14:1,x15:1,x16:1}, sense:'>=', rhs:120 }
+        ]
       }
-      det.push('</div>');
-      document.getElementById('resultado-detalhado').innerHTML = det.join('');
+    };
+
+    let varList, varNames, varFO, varConstraints, chart;
+
+    function loadPreset(key) {
+      const p = JSON.parse(JSON.stringify(presets[key]));
+      varList        = p.varList;
+      varNames       = p.varNames;
+      varFO          = p.varFO;
+      varConstraints = p.varConstraints;
+
+      document.getElementById('consumption-card').style.display =
+        key==='granel'? 'block':'none';
+      document.getElementById('coef-card').style.display =
+        key==='bebidas'? 'block':'none';
+      document.getElementById('constraints-op').style.display =
+        key==='bebidas'? 'block':'none';
+      document.getElementById('constraints-reg').style.display =
+        key==='bebidas'? 'block':'none';
+
+      updateVarTable();
+      updateConsHeader();
+      rebuildConsRows();
+      if (chart) chart.destroy();
+      solve();
     }
 
-    function recalcula() {
-      const xs = {};
-      Object.keys(coefObj).forEach(v => {
-        xs[v] = parseFloat(document.getElementById(`in-${v}`).value) || 0;
-      });
-
-      const Z = Object.entries(xs)
-        .reduce((s,[v,x]) => s + coefObj[v]*x, 0);
-
-      const status = restricoesDet.map((r,i) => {
-        const lhs = Object.entries(xs)
-          .reduce((s,[v,x]) => s + (r.coef[v]||0)*x, 0);
-        return {
-          texto: `R${i+1}: ${lhs.toFixed(1)} ${r.sentido} ${r.rhs}`,
-          ok: (r.sentido === '<=' ? lhs <= r.rhs : lhs >= r.rhs)
+    function updateVarTable(){
+      const tb=document.querySelector("#var-table tbody");
+      tb.innerHTML="";
+      varList.forEach(v=>{
+        const tr=document.createElement("tr");
+        let td=document.createElement("td"); td.innerText=v; tr.appendChild(td);
+        td=document.createElement("td");
+        const nameIn=document.createElement("input");
+        nameIn.type="text"; nameIn.value=varNames[v];
+        nameIn.dataset.var=v; nameIn.className="form-control form-control-sm";
+        nameIn.onchange=()=>{ varNames[v]=nameIn.value; updateResultList(); updateStepList(); };
+        td.appendChild(nameIn); tr.appendChild(td);
+        td=document.createElement("td");
+        const inp=document.createElement("input");
+        inp.type="number"; inp.step="any"; inp.value=varFO[v];
+        inp.dataset.var=v; inp.className="form-control form-control-sm";
+        td.appendChild(inp); tr.appendChild(td);
+        td=document.createElement("td");
+        const btn=document.createElement("button");
+        btn.className="btn btn-sm btn-danger"; btn.innerText="✕";
+        btn.onclick=()=>{
+          varList=varList.filter(x=>x!==v);
+          delete varNames[v]; delete varFO[v];
+          updateVarTable(); updateConsHeader(); rebuildConsRows(); solve();
         };
+        td.appendChild(btn); tr.appendChild(td);
+        tb.appendChild(tr);
       });
-
-      renderResultado(xs, Z, status);
-      chart.data.datasets[0].data = Object.values(xs);
-      chart.update();
     }
 
-    fetchAndRender('http://127.0.0.1:8000/api/questao1');
+    function updateConsHeader(){
+      const tr=document.querySelector("#cons-table thead tr");
+      tr.innerHTML="";
+      varList.forEach(v=>{
+        const th=document.createElement("th"); th.innerText=v; tr.appendChild(th);
+      });
+      ['Sentido','RHS','Ações'].forEach(txt=>{
+        const th=document.createElement("th"); th.innerText=txt; tr.appendChild(th);
+      });
+    }
+
+    function rebuildConsRows(){
+      const bd=document.querySelector("#cons-table tbody");
+      bd.innerHTML="";
+      varConstraints.forEach(c=> addConstraint(c));
+    }
+
+    function addVar(){
+      const name=prompt("Nome da variável:");
+      if(!name)return;
+      const code=prompt("Código (ex: x5):");
+      if(!code||varList.includes(code))return;
+      varList.push(code); varNames[code]=name; varFO[code]=0;
+      updateVarTable(); updateConsHeader(); rebuildConsRows(); solve();
+    }
+
+    function addConstraint(data){
+      if(!data){
+        data={coef:{},sense:'<=',rhs:0};
+        varList.forEach(v=>data.coef[v]=0);
+        varConstraints.push(data);
+      }
+      const bd=document.querySelector("#cons-table tbody");
+      const tr=document.createElement("tr");
+      varList.forEach(v=>{
+        const td=document.createElement("td");
+        const inp=document.createElement("input");
+        inp.type="number"; inp.step="any"; inp.value=data.coef[v];
+        inp.dataset.var=v; inp.className="form-control form-control-sm";
+        td.appendChild(inp); tr.appendChild(td);
+      });
+      let td=document.createElement("td");
+      const sel=document.createElement("select");
+      sel.className="form-select form-select-sm";
+      ['<=','>='].forEach(s=>{
+        const o=document.createElement("option");
+        o.value=s; o.innerText=s;
+        if(data.sense===s)o.selected=true;
+        sel.appendChild(o);
+      });
+      td.appendChild(sel); tr.appendChild(td);
+      td=document.createElement("td");
+      const inpR=document.createElement("input");
+      inpR.type="number"; inpR.step="any"; inpR.value=data.rhs;
+      inpR.className="form-control form-control-sm"; td.appendChild(inpR); tr.appendChild(td);
+      td=document.createElement("td");
+      const btnR=document.createElement("button");
+      btnR.className="btn btn-sm btn-danger"; btnR.innerText="✕";
+      btnR.onclick=()=>{
+        const idx=Array.from(tr.parentNode.children).indexOf(tr);
+        varConstraints.splice(idx,1); tr.remove(); solve();
+      };
+      td.appendChild(btnR); tr.appendChild(td);
+      bd.appendChild(tr);
+    }
+
+    function updateResultList(){
+      document.querySelectorAll('#result-list li').forEach(li=>{
+        varList.forEach(v=>{
+          if(li.innerText.startsWith(v+'*')){
+            li.innerText=`${varNames[v]} (${v})* = ${li.innerText.split('=')[1].trim()}`;
+          }
+        });
+      });
+    }
+
+    function updateStepList(){
+      const ol=document.getElementById('step-list');
+      Array.from(ol.children).forEach(li=>{
+        varList.forEach(v=>{
+          li.innerText=li.innerText.replace(
+            new RegExp(`\\b${v}\\b`,'g'),
+            `${varNames[v]} (${v})`
+          );
+        });
+      });
+    }
+
+    async function solve(){
+      document.querySelectorAll("#var-table tbody input").forEach(i=>
+        varFO[i.dataset.var]=parseFloat(i.value)||0
+      );
+      const cs=[]; document.querySelectorAll("#cons-table tbody tr").forEach(tr=>{
+        const coef={},cells=tr.children;
+        varList.forEach((v,i)=>coef[v]=parseFloat(cells[i].querySelector('input').value)||0);
+        const sense=cells[varList.length].querySelector('select').value;
+        const rhs=parseFloat(cells[varList.length+1].querySelector('input').value)||0;
+        cs.push({coef,sense,rhs});
+      });
+      const res=await fetch('http://localhost:8000/api/solve',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({variables:varList,coef_obj:varFO,constraints:cs})
+      });
+      const data=await res.json();
+      const ul=document.getElementById('result-list'); ul.innerHTML='';
+      varList.forEach(v=>{
+        const li=document.createElement('li');
+        li.innerText=`${varNames[v]} (${v})* = ${data.solution[v]}`;
+        ul.appendChild(li);
+      });
+      document.getElementById('val-Z').innerText=data.Z.toLocaleString('pt-BR');
+      const ol=document.getElementById('step-list'); ol.innerHTML='';
+      data.passo_a_passo.forEach(text=>{
+        varList.forEach(v=>{
+          text=text.replace(new RegExp(`\\b${v}\\b`,'g'),`${varNames[v]} (${v})`);
+        });
+        const li=document.createElement('li');
+        li.className='list-group-item'; li.innerText=text;
+        ol.appendChild(li);
+      });
+      if(chart) chart.destroy();
+      chart=new Chart(document.getElementById('barChart'),{
+        type:'bar',
+        data:{
+          labels:varList.map(v=>`${varNames[v]} (${v})*`),
+          datasets:[{label:'Ótimo',data:varList.map(v=>data.solution[v])}]
+        },
+        options:{
+          scales:{y:{beginAtZero:true}},
+          plugins:{legend:{display:false}},
+          animation:{duration:800}
+        }
+      });
+    }
+
+    window.onload = () => loadPreset('granel');
   </script>
 </body>
 </html>
